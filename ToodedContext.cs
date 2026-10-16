@@ -28,7 +28,6 @@ namespace Timur_Tooded
             modelBuilder.Entity<Toode>().Property(t => t.Hind).HasPrecision(10, 2);
             modelBuilder.Entity<Klient>().ToTable("Kliendid");
             modelBuilder.Entity<Klient>().Property(k => k.Boonus).HasPrecision(10, 2);
-            modelBuilder.Entity<Kasutaja>().HasIndex(k => k.Email).IsUnique();
         }
     }
 }

@@ -9,9 +9,9 @@ namespace Timur_Tooded
     public class Kasutaja
     {
         public int Id { get; set; }
-        public string Nimi { get; set; } = "";
-        public string Email { get; set; } = "";
-        public string ParoolHash { get; set; } = "";
-        public string Roll { get; set; } = "Müüja";
+        public string Nimi { get; set; }
+        public string Email { get; set; }
+        public string Parool { get; set; }
+        public string Roll { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Tooded
+﻿namespace Timur_Tooded
 {
     partial class Form1
     {

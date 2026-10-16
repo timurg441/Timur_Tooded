@@ -9,10 +9,9 @@ namespace Timur_Tooded
     public class Klient
     {
         public int Id { get; set; }
-        public string Nimi { get; set; } = "";
-        public string? Email { get; set; }
-        public string? Telefon { get; set; }
-        public string Kliendikaart { get; set; } = "";
+        public string Nimi { get; set; }
+        public string Email { get; set; }
+        public string Kliendikaart { get; set; }
         public decimal Boonus { get; set; }
     }
 }
