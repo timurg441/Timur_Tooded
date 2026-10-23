@@ -2,6 +2,8 @@
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace Timur_Tooded.Migrations
 {
     /// <inheritdoc />
@@ -11,28 +13,12 @@ namespace Timur_Tooded.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Kasutajad",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Nimi = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    ParoolHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Roll = table.Column<string>(type: "nvarchar(max)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Kasutajad", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Kategooriatabel",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Kategooria_nimetus = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Kategooria_nimetus = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Kirjeldus = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
@@ -41,29 +27,12 @@ namespace Timur_Tooded.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Kliendid",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Nimi = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Telefon = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Kliendikaart = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Boonus = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Kliendid", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Toodetabel",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Toodenimetus = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Toodenimetus = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Kogus = table.Column<int>(type: "int", nullable: false),
                     Hind = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
                     Pilt = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -80,11 +49,15 @@ namespace Timur_Tooded.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Kasutajad_Email",
-                table: "Kasutajad",
-                column: "Email",
-                unique: true);
+            migrationBuilder.InsertData(
+                table: "Kategooriatabel",
+                columns: new[] { "Id", "Kategooria_nimetus", "Kirjeldus" },
+                values: new object[,]
+                {
+                    { 1, "Joogid", null },
+                    { 2, "Puu- ja köögiviljad", null },
+                    { 3, "Maiustused", null }
+                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Toodetabel_KategooriaId",
@@ -95,12 +68,6 @@ namespace Timur_Tooded.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Kasutajad");
-
-            migrationBuilder.DropTable(
-                name: "Kliendid");
-
             migrationBuilder.DropTable(
                 name: "Toodetabel");
 

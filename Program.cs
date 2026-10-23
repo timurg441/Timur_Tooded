@@ -1,17 +1,43 @@
-namespace Timur_Tooded
+using Microsoft.EntityFrameworkCore;
+
+namespace Timur_Tooded;
+
+internal static class Program
 {
-    internal static class Program
+    [STAThread]
+    static void Main()
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
-        [STAThread]
-        static void Main()
+        ApplicationConfiguration.Initialize();
+        Kaustad.Loo();
+
+        using (var db = new ToodedContext())
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
-            Application.Run(new Form3());
+            db.Database.Migrate();
+            LooAlgkasutajad(db);
         }
+
+        Application.Run(new LoginForm());
+    }
+
+    private static void LooAlgkasutajad(ToodedContext db)
+    {
+        if (db.Kasutajad.Any()) return;
+
+        db.Kasutajad.AddRange(
+            new Kasutaja
+            {
+                Nimi = "Admin",
+                Email = "admin@admin.ee",
+                ParoolHash = PasswordHelper.Hash("admin123"),
+                Roll = "admin"
+            },
+            new Kasutaja
+            {
+                Nimi = "Kasutaja",
+                Email = "kasutaja@pood.ee",
+                ParoolHash = PasswordHelper.Hash("kasutaja123"),
+                Roll = "kasutaja"
+            });
+        db.SaveChanges();
     }
 }

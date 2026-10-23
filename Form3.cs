@@ -8,93 +8,101 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Timur_Tooded
+using Microsoft.EntityFrameworkCore;
+
+namespace Timur_Tooded;
+
+public partial class Form3 : Form
 {
-    public partial class Form3 : Form
+    private readonly ToodedContext _db = new();
+    private readonly TabControl tabPood = new();
+
+    public Form3()
     {
-        private readonly ToodedContext _db;
+        InitializeComponent();
+        Text = "Pood";
+        ClientSize = new Size(930, 630);
 
-        public Form3()
+        tabPood.Dock = DockStyle.Fill;
+        Controls.Add(tabPood);
+
+        LaePood();
+    }
+
+    private void LaePood()
+    {
+        tabPood.TabPages.Clear();
+
+        var kategooriad = _db.Kategooriatabel
+            .Include(k => k.Tooded)
+            .OrderBy(k => k.Kategooria_nimetus)
+            .ToList();
+
+        foreach (var kat in kategooriad)
         {
-            InitializeComponent();
-            _db = new ToodedContext();
-            LaeKategooriadJaPildid();
-        }
-        private Image LaePilt(string failinimi)
-        {
-            if (string.IsNullOrEmpty(failinimi)) return null;
+            var leht = new TabPage(kat.Kategooria_nimetus) { AutoScroll = true };
 
-            string tee = Path.Combine(Application.StartupPath, "Images", failinimi);
-            if (!File.Exists(tee)) return null;
-
-            using var ms = new MemoryStream(File.ReadAllBytes(tee));
-            return new Bitmap(Image.FromStream(ms));
-        }
-
-        private void LaeKategooriadJaPildid()
-        {
-            tabPood.TabPages.Clear();
-
-            var kategooriad = _db.Kategooriatabel.ToList();
-
-            foreach (var kat in kategooriad)
+            int i = 0;
+            foreach (var toode in kat.Tooded.OrderBy(t => t.Toodenimetus))
             {
-                var page = new TabPage(kat.Kategooria_nimetus);
-                page.AutoScroll = true;
-
-                var tooted = _db.Toodetabel
-                                .Where(t => t.KategooriaId == kat.Id)
-                                .ToList();
-
-                int x = 10;
-                int y = 10;
-                int count = 0;
-
-                foreach (var t in tooted)
-                {
-                    Panel p = new Panel();
-                    p.Width = 150;
-                    p.Height = 200;
-                    p.BorderStyle = BorderStyle.FixedSingle;
-
-                    PictureBox pb = new PictureBox();
-                    pb.Width = 140;
-                    pb.Height = 140;
-                    pb.SizeMode = PictureBoxSizeMode.Zoom;
-                    pb.Location = new Point(5, 5);
-                    pb.Image = LaePilt(t.Pilt);
-
-                    Label lbl = new Label();
-                    lbl.Text = t.Toodenimetus;
-                    lbl.AutoSize = false;
-                    lbl.TextAlign = ContentAlignment.MiddleCenter;
-                    lbl.Location = new Point(5, 150);
-                    lbl.Width = 140;
-                    lbl.Height = 40;
-
-                    pb.Click += (s, e) =>
-                    {
-                        MessageBox.Show($"Toode: {t.Toodenimetus}\nHind: {t.Hind} €\nLaos: {t.Kogus} tk");
-                    };
-
-                    p.Controls.Add(pb);
-                    p.Controls.Add(lbl);
-
-                    p.Location = new Point(x, y);
-                    page.Controls.Add(p);
-
-                    x += 160;
-                    count++;
-
-                    if (count % 4 == 0)
-                    {
-                        x = 10;
-                        y += 210;
-                    }
-                }
-
-                tabPood.TabPages.Add(page);
+                var kaart = LooTootekaart(toode);
+                kaart.Location = new Point(10 + (i % 5) * 175, 10 + (i / 5) * 250);
+                leht.Controls.Add(kaart);
+                i++;
             }
+
+            tabPood.TabPages.Add(leht);
         }
+    }
+
+    private Panel LooTootekaart(Toode t)
+    {
+        var kaart = new Panel { Size = new Size(160, 235), BorderStyle = BorderStyle.FixedSingle };
+
+        var pilt = new PictureBox
+        {
+            Bounds = new Rectangle(5, 5, 148, 140),
+            SizeMode = PictureBoxSizeMode.Zoom,
+            Image = Kaustad.LaePilt(t.Pilt)
+        };
+
+        var silt = new Label
+        {
+            Bounds = new Rectangle(5, 150, 148, 40),
+            TextAlign = ContentAlignment.MiddleCenter,
+            Text = $"{t.Toodenimetus}\n{t.Hind:F2} €"
+        };
+
+        var kogus = new NumericUpDown
+        {
+            Bounds = new Rectangle(5, 197, 60, 27),
+            Minimum = 1,
+            Maximum = Math.Max(1, t.Kogus),   // rohkem kui laos ei saa valida
+            Value = 1
+        };
+
+        var nupp = new Button
+        {
+            Bounds = new Rectangle(70, 195, 83, 30),
+            Text = "Lisa korvi",
+            Enabled = t.Kogus > 0
+        };
+        nupp.Click += (s, e) =>
+        {
+            Ostukorv.Lisa(t, (int)kogus.Value);
+            MessageBox.Show($"{t.Toodenimetus} ({kogus.Value} tk) lisati ostukorvi.");
+        };
+
+        pilt.Click += (s, e) =>
+            MessageBox.Show($"{t.Toodenimetus}\nHind: {t.Hind:F2} €\nLaos: {t.Kogus} tk");
+
+        kaart.Controls.AddRange(new Control[] { pilt, silt, kogus, nupp });
+        return kaart;
+    }
+
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        _db.Dispose();
+        base.OnFormClosed(e);
     }
 }

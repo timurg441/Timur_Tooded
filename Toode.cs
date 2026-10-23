@@ -4,17 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Timur_Tooded
-{
-    public class Toode
-    {
-        public int Id { get; set; }
-        public string Toodenimetus { get; set; }
-        public int Kogus { get; set; }
-        public decimal Hind { get; set; }
-        public string Pilt { get; set; }
+namespace Timur_Tooded;
 
-        public int KategooriaId { get; set; }
-        public Kategooria Kategooria { get; set; }
-    }
+public class Toode
+{
+    public int Id { get; set; }
+    public string Toodenimetus { get; set; } = "";
+    public int Kogus { get; set; }
+    public decimal Hind { get; set; }
+    public string? Pilt { get; set; }
+
+    public int KategooriaId { get; set; }
+    public Kategooria Kategooria { get; set; } = null!;
 }

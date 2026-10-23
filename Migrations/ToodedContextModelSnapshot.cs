@@ -30,25 +30,22 @@ namespace Timur_Tooded.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Nimi")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ParoolHash")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Roll")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[Email] IS NOT NULL");
 
                     b.ToTable("Kasutajad");
                 });
@@ -62,7 +59,6 @@ namespace Timur_Tooded.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Kategooria_nimetus")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Kirjeldus")
@@ -71,37 +67,23 @@ namespace Timur_Tooded.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Kategooriatabel", (string)null);
-                });
 
-            modelBuilder.Entity("Timur_Tooded.Klient", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Boonus")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Kliendikaart")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Nimi")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Telefon")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Kliendid", (string)null);
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Kategooria_nimetus = "Joogid"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Kategooria_nimetus = "Puu- ja köögiviljad"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Kategooria_nimetus = "Maiustused"
+                        });
                 });
 
             modelBuilder.Entity("Timur_Tooded.Toode", b =>
@@ -126,7 +108,6 @@ namespace Timur_Tooded.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Toodenimetus")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");

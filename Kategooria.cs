@@ -4,14 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Timur_Tooded
-{
-    public class Kategooria
-    {
-        public int Id { get; set; }
-        public string Kategooria_nimetus { get; set; }
-        public string Kirjeldus { get; set; }
+namespace Timur_Tooded;
 
-        public ICollection<Toode> Tooded { get; set; }
-    }
+public class Kategooria
+{
+    public int Id { get; set; }
+    public string Kategooria_nimetus { get; set; } = "";
+    public string? Kirjeldus { get; set; }
+
+    public ICollection<Toode> Tooded { get; set; } = new List<Toode>();
 }
