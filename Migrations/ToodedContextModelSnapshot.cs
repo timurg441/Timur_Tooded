@@ -83,6 +83,26 @@ namespace Timur_Tooded.Migrations
                         {
                             Id = 3,
                             Kategooria_nimetus = "Maiustused"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Kategooria_nimetus = "Piimatooted ja munad"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Kategooria_nimetus = "Liha"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Kategooria_nimetus = "Pagaritooted"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Kategooria_nimetus = "Muu"
                         });
                 });
 

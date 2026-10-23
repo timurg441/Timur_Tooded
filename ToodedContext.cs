@@ -29,6 +29,10 @@ public class ToodedContext : DbContext
         modelBuilder.Entity<Kategooria>().HasData(
             new Kategooria { Id = 1, Kategooria_nimetus = "Joogid" },
             new Kategooria { Id = 2, Kategooria_nimetus = "Puu- ja köögiviljad" },
-            new Kategooria { Id = 3, Kategooria_nimetus = "Maiustused" });
+            new Kategooria { Id = 3, Kategooria_nimetus = "Maiustused" },
+            new Kategooria { Id = 4, Kategooria_nimetus = "Piimatooted ja munad" },
+            new Kategooria { Id = 5, Kategooria_nimetus = "Liha" },
+            new Kategooria { Id = 6, Kategooria_nimetus = "Pagaritooted" },
+            new Kategooria { Id = 7, Kategooria_nimetus = "Muu" });
     }
 }
