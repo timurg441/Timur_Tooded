@@ -180,7 +180,7 @@ public partial class ArveForm : Form
         }
 
         const string saatja = "1ame.xyz07@gmail.com";
-        const string rakenduseParool = "emez sqqn rvcf ktqi";
+        const string rakenduseParool = "";
 
         try
         {
