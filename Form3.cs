@@ -21,6 +21,11 @@ public partial class Form3 : Form
     private Kategooria? valitudKat;   // praegu valitud kategooria (null = kõik)
     private List<Kategooria> kategooriad = new();
 
+    // otsing ja sorteerimine
+    private readonly TextBox txtOtsing = new();
+    private readonly RoundButton btnSort = new();
+    private int sortRezhiim;   // 0 = nime järgi, 1 = odavamast, 2 = kallimast
+
     // teade "toode lisati ostukorvi"
     private readonly Kaart teade = new();
     private readonly Label lblTeade = new();
@@ -46,6 +51,23 @@ public partial class Form3 : Form
         kategooriaRiba.Padding = new Padding(10, 12, 10, 0);
         kategooriaRiba.BackColor = Stiil.Taust;
         Controls.Add(kategooriaRiba);
+
+        // otsing + sorteerimine (kategooriate riba kohal)
+        var otsinguRiba = new Panel { Dock = DockStyle.Top, Height = 62, BackColor = Stiil.Taust };
+        var otsingKast = Stiil.Sisend(txtOtsing, 10, 9, 420, "Otsi toodet nime järgi", varv: Color.White);
+        txtOtsing.TextChanged += (s, e) => NaitaTooted();   // tulemused uuenevad trükkimise ajal
+
+        btnSort.Bounds = new Rectangle(442, 9, 230, 44);
+        btnSort.Raadius = 8;
+        btnSort.Click += (s, e) =>
+        {
+            sortRezhiim = (sortRezhiim + 1) % 3;   // sorteerimata -> odavamast -> kallimast
+            UuendaSortNupp();
+            NaitaTooted();
+        };
+        otsinguRiba.Controls.AddRange(new Control[] { otsingKast, btnSort });
+        UuendaSortNupp();
+        Controls.Add(otsinguRiba);
 
         // punane riba üleval
         var pais = new Panel { Dock = DockStyle.Top, Height = 56, BackColor = Stiil.Punane };
@@ -137,19 +159,42 @@ public partial class Form3 : Form
         btnKorv.Invalidate();
     }
 
+    // sorteerimisnupu tekst ja värv: aktiivne sorteerimine on punane
+    private void UuendaSortNupp()
+    {
+        btnSort.Text = sortRezhiim switch
+        {
+            1 => "Hind: odavamast ↑",
+            2 => "Hind: kallimast ↓",
+            _ => "Sorteeri hinna järgi"
+        };
+        btnSort.Varv = sortRezhiim == 0 ? Color.White : Stiil.Punane;
+        btnSort.ForeColor = sortRezhiim == 0 ? Stiil.Tekst : Color.White;
+        btnSort.Invalidate();
+    }
+
     // null = kõik tooted
     private void ValiKategooria(Kategooria? valitud)
     {
         valitudKat = valitud;
 
         // kategooriate nupud: valitud on punane, ülejäänud valged
-        kategooriaRiba.Controls.Clear();
+        while (kategooriaRiba.Controls.Count > 0)
+            kategooriaRiba.Controls[0].Dispose();
         kategooriaRiba.Controls.Add(LooNupp("Kõik", valitud == null, () => ValiKategooria(null)));
         foreach (var kat in kategooriad)
         {
             var k = kat;
             kategooriaRiba.Controls.Add(LooNupp(k.Kategooria_nimetus, valitud?.Id == k.Id, () => ValiKategooria(k)));
         }
+
+        NaitaTooted();
+    }
+
+    // joonistab tooted: kategooria + otsing + sorteerimine
+    private void NaitaTooted()
+    {
+        tootedPaneel.SuspendLayout();
 
         // vanad kaardid ära
         foreach (Control c in tootedPaneel.Controls)
@@ -158,12 +203,38 @@ public partial class Form3 : Form
         while (tootedPaneel.Controls.Count > 0)
             tootedPaneel.Controls[0].Dispose();
 
-        var tooted = valitud == null
+        IEnumerable<Toode> tooted = valitudKat == null
             ? kategooriad.SelectMany(k => k.Tooded)
-            : valitud.Tooded;
+            : valitudKat.Tooded;
 
-        foreach (var toode in tooted.OrderBy(t => t.Toodenimetus))
+        string otsing = txtOtsing.Text.Trim();
+        if (otsing.Length > 0)
+            tooted = tooted.Where(t => t.Toodenimetus.Contains(otsing, StringComparison.CurrentCultureIgnoreCase));
+
+        tooted = sortRezhiim switch
+        {
+            1 => tooted.OrderBy(t => t.Hind).ThenBy(t => t.Toodenimetus),
+            2 => tooted.OrderByDescending(t => t.Hind).ThenBy(t => t.Toodenimetus),
+            _ => tooted.OrderBy(t => t.Toodenimetus)
+        };
+
+        var nimekiri = tooted.ToList();
+        foreach (var toode in nimekiri)
             tootedPaneel.Controls.Add(LooTootekaart(toode));
+
+        if (nimekiri.Count == 0)
+        {
+            tootedPaneel.Controls.Add(new Label
+            {
+                Text = "Midagi ei leitud",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 14f),
+                ForeColor = Stiil.HallTekst,
+                Margin = new Padding(10)
+            });
+        }
+
+        tootedPaneel.ResumeLayout();
     }
 
     private RoundButton LooNupp(string tekst, bool valitud, Action klikk)
