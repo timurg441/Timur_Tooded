@@ -18,38 +18,94 @@ public partial class ArveForm : Form
 {
     private readonly ListBox listOstukorv = new();
     private readonly Label lblKokku = new();
+    private readonly Label lblTuhi = new();
     private readonly TextBox txtEmail = new();
-    private readonly Button btnEemalda = new(), btnGenPDF = new(), btnSaadaEmail = new();
+    private readonly RoundButton btnEemalda = new(), btnGenPDF = new(), btnSaadaEmail = new();
     private string? viimanePdf;   // viimati loodud arve täistee
 
     public ArveForm()
     {
         InitializeComponent();
+        Stiil.Vorm(this);
         Text = "Ostukorv ja arve";
-        ClientSize = new Size(600, 380);
+        ClientSize = new Size(720, 480);
+        FormBorderStyle = FormBorderStyle.FixedSingle;
+        MaximizeBox = false;
+        StartPosition = FormStartPosition.CenterScreen;
 
-        listOstukorv.SetBounds(20, 20, 330, 300);
-        lblKokku.SetBounds(20, 330, 330, 30);
-        lblKokku.Font = new Font(Font, FontStyle.Bold);
+        // punane pealkirjariba
+        var pais = new Panel { Bounds = new Rectangle(0, 0, 720, 56), BackColor = Stiil.Punane };
+        pais.Controls.Add(new Label
+        {
+            Text = "Ostukorv ja arve",
+            ForeColor = Color.White,
+            BackColor = Color.Transparent,
+            Font = new Font("Segoe UI", 18f, FontStyle.Bold),
+            AutoSize = true,
+            Location = new Point(15, 10)
+        });
 
-        txtEmail.SetBounds(370, 20, 200, 27);
-        txtEmail.PlaceholderText = "Saaja e-post";
+        // valge kaart, mille sees on ostukorvi nimekiri
+        var kaart = new Kaart { Bounds = new Rectangle(20, 76, 440, 330), Raadius = 12 };
 
-        SeaNupp(btnEemalda, "Eemalda valitud rida", 70, btnEemalda_Click);
-        SeaNupp(btnGenPDF, "Genereeri PDF", 115, btnGenPDF_Click);
-        SeaNupp(btnSaadaEmail, "Saada e-postiga", 160, btnSaadaEmail_Click);
+        listOstukorv.SetBounds(10, 10, 420, 310);
+        listOstukorv.BorderStyle = BorderStyle.None;
+        listOstukorv.BackColor = Color.White;
+        listOstukorv.DrawMode = DrawMode.OwnerDrawFixed;
+        listOstukorv.ItemHeight = 36;
+        listOstukorv.DrawItem += listOstukorv_DrawItem;
 
-        Controls.AddRange(new Control[] { listOstukorv, lblKokku, txtEmail,
+        lblTuhi.Text = "Ostukorv on tühi";
+        lblTuhi.ForeColor = Stiil.HallTekst;
+        lblTuhi.Font = new Font("Segoe UI", 12f);
+        lblTuhi.TextAlign = ContentAlignment.MiddleCenter;
+        lblTuhi.SetBounds(10, 10, 420, 310);
+
+        kaart.Controls.Add(lblTuhi);
+        kaart.Controls.Add(listOstukorv);
+
+        // summa suurelt punaselt
+        lblKokku.SetBounds(20, 420, 440, 40);
+        lblKokku.Font = new Font("Segoe UI", 20f, FontStyle.Bold);
+        lblKokku.ForeColor = Stiil.Punane;
+
+        var emailKast = Stiil.Sisend(txtEmail, 480, 76, 220, "Saaja e-post", false, Color.White);
+
+        SeaNupp(btnEemalda, "Eemalda valitud rida", 144, btnEemalda_Click);
+        btnEemalda.Varv = Color.White;          // teisejärguline nupp: valge
+        btnEemalda.ForeColor = Stiil.Tekst;
+        SeaNupp(btnGenPDF, "Genereeri PDF", 214, btnGenPDF_Click);
+        SeaNupp(btnSaadaEmail, "Saada e-postiga", 270, btnSaadaEmail_Click);
+
+        Controls.AddRange(new Control[] { pais, kaart, lblKokku, emailKast,
             btnEemalda, btnGenPDF, btnSaadaEmail });
 
         NaitaKorvi();
     }
 
-    private void SeaNupp(Button nupp, string tekst, int y, EventHandler kasitleja)
+    private void SeaNupp(RoundButton nupp, string tekst, int y, EventHandler kasitleja)
     {
         nupp.Text = tekst;
-        nupp.SetBounds(370, y, 200, 35);
+        nupp.SetBounds(480, y, 220, 44);
         nupp.Click += kasitleja;
+    }
+
+    // iga rida joonistatakse ise: valitud rida on heleroosa
+    private void listOstukorv_DrawItem(object? sender, DrawItemEventArgs e)
+    {
+        if (e.Index < 0) return;
+
+        bool valitud = (e.State & DrawItemState.Selected) != 0;
+        using (var taust = new SolidBrush(valitud ? Color.FromArgb(253, 226, 227) : Color.White))
+            e.Graphics.FillRectangle(taust, e.Bounds);
+
+        TextRenderer.DrawText(e.Graphics, listOstukorv.Items[e.Index].ToString(), Font,
+            new Rectangle(e.Bounds.X + 8, e.Bounds.Y, e.Bounds.Width - 8, e.Bounds.Height),
+            Stiil.Tekst, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+
+        // õhuke joon ridade vahele
+        using var joon = new Pen(Color.FromArgb(235, 235, 235));
+        e.Graphics.DrawLine(joon, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
     }
 
     private void NaitaKorvi()
@@ -58,6 +114,7 @@ public partial class ArveForm : Form
         foreach (var rida in Ostukorv.Ridad)
             listOstukorv.Items.Add(rida);   // ListBox kuvab OstukorviRida.ToString()
         lblKokku.Text = $"Kokku: {Ostukorv.Kokku:F2} €";
+        lblTuhi.Visible = Ostukorv.Ridad.Count == 0;
     }
 
     private void btnEemalda_Click(object? sender, EventArgs e)
@@ -123,7 +180,7 @@ public partial class ArveForm : Form
         }
 
         const string saatja = "1ame.xyz07@gmail.com";
-        const string rakenduseParool = "";
+        const string rakenduseParool = "emez sqqn rvcf ktqi";
 
         try
         {
