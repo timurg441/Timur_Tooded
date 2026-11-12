@@ -95,11 +95,45 @@ public partial class LoginForm : Form
             return;
         }
 
-        AktiivneKasutaja.Nimi = kasutaja.Nimi;
-        AktiivneKasutaja.Roll = kasutaja.Roll;
+        // sessiooni kontode nimekiri: admin saab kiiresti vahetada admini ja kasutaja vahel,
+        // tavakasutajal on ainult tema oma konto
+        AktiivneKasutaja.Kontod.Clear();
+        AktiivneKasutaja.Kontod.Add(new Konto(kasutaja.Id, kasutaja.Nimi, kasutaja.Roll));
 
+        if (kasutaja.Roll == "admin")
+        {
+            var tava = db.Kasutajad.FirstOrDefault(k => k.Email == "kasutaja@pood.ee");
+            if (tava != null)
+                AktiivneKasutaja.Kontod.Add(new Konto(tava.Id, tava.Nimi, tava.Roll));
+        }
+
+        AktiivneKasutaja.Vaheta(AktiivneKasutaja.Kontod[0]);
+        AvaMenyy();
+    }
+
+    // avab peamenüü; kui kontot vahetati, avab uue menüü uue kontoga
+    private void AvaMenyy()
+    {
         var menyy = new FormMain();
-        menyy.FormClosed += (s, a) => Close();   // menüü sulgemine lõpetab programmi
+        menyy.FormClosed += (s, a) =>
+        {
+            if (menyy.Vahetatud)
+            {
+                AvaMenyy();   // uus konto -> uus menüü
+            }
+            else if (menyy.LogiValja)
+            {
+                // väljalogimine: tühjendame väljad ja näitame sisselogimist uuesti
+                txtEmail.Clear();
+                txtParool.Clear();
+                lblVeateade.Text = "";
+                Show();
+            }
+            else
+            {
+                Close();   // menüü sulgemine lõpetab programmi
+            }
+        };
         menyy.Show();
         Hide();
     }

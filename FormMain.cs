@@ -12,7 +12,12 @@ namespace Timur_Tooded;
 
 public partial class FormMain : Form
 {
+    public bool LogiValja { get; private set; }   // kasutaja vajutas "Logi välja"
+    public bool Vahetatud { get; private set; }   // kasutaja vahetas kontot
+
     private Label lblKorvInfo = new();
+    private readonly RoundButton btnKonto = new();
+    private readonly ContextMenuStrip kontoMenyy = new();
 
     public FormMain()
     {
@@ -26,6 +31,16 @@ public partial class FormMain : Form
 
         // punane pealkirjariba
         var pais = new Panel { Bounds = new Rectangle(0, 0, 780, 70), BackColor = Stiil.Punane };
+
+        // vasakul üleval: konto nupp, vajutades tuleb kontode menüü
+        btnKonto.Text = $"{AktiivneKasutaja.Nimi}  ▾";
+        btnKonto.Bounds = new Rectangle(20, 17, 240, 36);
+        btnKonto.Raadius = 18;
+        btnKonto.Varv = Color.White;
+        btnKonto.ForeColor = Stiil.Punane;
+        btnKonto.Click += (s, e) => NaitaKontoMenyyd();
+        pais.Controls.Add(btnKonto);
+
         pais.Controls.Add(new Label
         {
             Text = "Pood",
@@ -33,15 +48,15 @@ public partial class FormMain : Form
             BackColor = Color.Transparent,
             Font = new Font("Segoe UI", 20f, FontStyle.Bold),
             AutoSize = true,
-            Location = new Point(24, 16)
+            Location = new Point(290, 16)
         });
         pais.Controls.Add(new Label
         {
-            Text = $"Tere, {AktiivneKasutaja.Nimi}  •  {AktiivneKasutaja.Roll}",
+            Text = AktiivneKasutaja.OnAdmin ? "Administraator" : "Ostja",
             ForeColor = Color.White,
             BackColor = Color.Transparent,
             Font = new Font("Segoe UI", 11f),
-            Bounds = new Rectangle(380, 22, 376, 28),
+            Bounds = new Rectangle(500, 22, 256, 28),
             TextAlign = ContentAlignment.MiddleRight
         });
 
@@ -54,30 +69,91 @@ public partial class FormMain : Form
             Location = new Point(30, 92)
         };
 
-        // kolm suurt kaarti
-        var pood = TeeKaart("🛍", "Pood", "Vaata tooteid ja lisa korvi", 30, true, () => Ava(new Form3()), out _);
-        var arve = TeeKaart("🧾", "Ostukorv ja arve", "", 280, true, () => Ava(new ArveForm()), out lblKorvInfo);
-        var haldus = TeeKaart("⚙", "Tootehaldus",
-            AktiivneKasutaja.OnAdmin ? "Lisa, muuda ja kustuta tooteid" : "Ainult administraatorile",
-            530, AktiivneKasutaja.OnAdmin, () => Ava(new Form2()), out _);
+        // admin näeb ainult tootehaldust, tavakasutaja ainult ostja asju
+        var kaardid = new List<Kaart>();
+        if (AktiivneKasutaja.OnAdmin)
+        {
+            kaardid.Add(TeeKaart("⚙", "Tootehaldus", "Lisa, muuda ja kustuta tooteid",
+                () => Ava(new Form2()), out _));
+        }
+        else
+        {
+            kaardid.Add(TeeKaart("🛍", "Pood", "Vaata tooteid ja lisa korvi",
+                () => Ava(new Form3()), out _));
+            kaardid.Add(TeeKaart("🧾", "Ostukorv ja arve", "",
+                () => Ava(new ArveForm()), out lblKorvInfo));
+        }
 
-        Controls.AddRange(new Control[] { pais, alguse, pood, arve, haldus });
+        Controls.Add(pais);
+        Controls.Add(alguse);
+
+        // kaardid keskele
+        int kokku = kaardid.Count * 220 + (kaardid.Count - 1) * 30;
+        int x = (ClientSize.Width - kokku) / 2;
+        foreach (var kaart in kaardid)
+        {
+            kaart.Location = new Point(x, 150);
+            Controls.Add(kaart);
+            x += 250;
+        }
 
         UuendaKorv();
     }
 
-    // üks menüükaart; lubatud=false -> hall ja ei reageeri
-    private Kaart TeeKaart(string ikoon, string pealkiri, string alapealkiri, int x, bool lubatud,
+    // ---------- Kontode menüü ----------
+
+    private void NaitaKontoMenyyd()
+    {
+        kontoMenyy.Items.Clear();
+        kontoMenyy.Font = new Font("Segoe UI", 10.5f);
+
+        foreach (var konto in AktiivneKasutaja.Kontod)
+        {
+            var valitud = konto;   // iga kliki jaoks oma koopia
+            var rida = new ToolStripMenuItem($"{konto.Nimi}  ({konto.Roll})")
+            {
+                Checked = konto.Id == AktiivneKasutaja.Id
+            };
+            rida.Click += (s, e) => VahetaKonto(valitud);
+            kontoMenyy.Items.Add(rida);
+        }
+
+        kontoMenyy.Items.Add(new ToolStripSeparator());
+        var valja = new ToolStripMenuItem("Logi välja");
+        valja.Click += (s, e) =>
+        {
+            Ostukorv.Tyhjenda();
+            AktiivneKasutaja.LogiValja();
+            LogiValja = true;
+            Close();
+        };
+        kontoMenyy.Items.Add(valja);
+
+        kontoMenyy.Show(btnKonto, new Point(0, btnKonto.Height));
+    }
+
+    private void VahetaKonto(Konto konto)
+    {
+        if (konto.Id == AktiivneKasutaja.Id) return;   // see konto on juba aktiivne
+
+        AktiivneKasutaja.Vaheta(konto);
+        Ostukorv.Tyhjenda();   // ostukorv kuulub ostjale, uuel kontol algab tühjalt
+        Vahetatud = true;
+        Close();               // LoginForm avab uue menüü uue kontoga
+    }
+
+    // ---------- Menüükaardid ----------
+
+    private Kaart TeeKaart(string ikoon, string pealkiri, string alapealkiri,
                            Action ava, out Label alaSilt)
     {
-        var kaart = new Kaart { Bounds = new Rectangle(x, 150, 220, 250), Raadius = 14 };
-        if (!lubatud) kaart.Taustavarv = Color.FromArgb(235, 235, 235);
+        var kaart = new Kaart { Bounds = new Rectangle(0, 150, 220, 250), Raadius = 14 };
 
         var ikoonSilt = new Label
         {
             Text = ikoon,
             Font = new Font("Segoe UI Emoji", 36f),
-            ForeColor = lubatud ? Stiil.Punane : Color.Gray,
+            ForeColor = Stiil.Punane,
             BackColor = Color.Transparent,
             Bounds = new Rectangle(0, 35, 220, 80),
             TextAlign = ContentAlignment.MiddleCenter
@@ -86,7 +162,7 @@ public partial class FormMain : Form
         {
             Text = pealkiri,
             Font = new Font("Segoe UI", 14f, FontStyle.Bold),
-            ForeColor = lubatud ? Stiil.Tekst : Color.Gray,
+            ForeColor = Stiil.Tekst,
             BackColor = Color.Transparent,
             Bounds = new Rectangle(0, 125, 220, 32),
             TextAlign = ContentAlignment.MiddleCenter
@@ -103,18 +179,15 @@ public partial class FormMain : Form
 
         kaart.Controls.AddRange(new Control[] { ikoonSilt, pealkiriSilt, alaSilt });
 
-        if (lubatud)
-        {
-            // punane raam kui hiir on kaardi peal
-            void Uuenda() => kaart.SeaEsile(kaart.ClientRectangle.Contains(kaart.PointToClient(Cursor.Position)));
+        // punane raam kui hiir on kaardi peal
+        void Uuenda() => kaart.SeaEsile(kaart.ClientRectangle.Contains(kaart.PointToClient(Cursor.Position)));
 
-            foreach (Control c in new Control[] { kaart, ikoonSilt, pealkiriSilt, alaSilt })
-            {
-                c.Cursor = Cursors.Hand;
-                c.MouseEnter += (s, e) => Uuenda();
-                c.MouseLeave += (s, e) => Uuenda();
-                c.Click += (s, e) => ava();
-            }
+        foreach (Control c in new Control[] { kaart, ikoonSilt, pealkiriSilt, alaSilt })
+        {
+            c.Cursor = Cursors.Hand;
+            c.MouseEnter += (s, e) => Uuenda();
+            c.MouseLeave += (s, e) => Uuenda();
+            c.Click += (s, e) => ava();
         }
         return kaart;
     }
